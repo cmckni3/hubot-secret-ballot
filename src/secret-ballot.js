@@ -266,7 +266,7 @@ module.exports = function(robot) {
   robot.respond(/poll reset votes (\d+)/i, function(msg) {
     var pollID = Number(msg.match[1]);
     var pollsInProgress = robot.brain.get('polls_in_progress') || {};
-    var poll = Object.keys(pollsInProgress)map(function(key) {
+    var poll = Object.keys(pollsInProgress).map(function(key) {
       return pollsInProgress[key];
     }).filter(function(poll) {
       return poll.id === id;
@@ -275,6 +275,25 @@ module.exports = function(robot) {
     if (typeof poll === 'undefined') {
       msg.send('Sorry, I couldn\'t find that poll.');
     } else {
+      // remove votes for pollID
+      var votes = robot.brain.get('poll_user_votes') || {};
+      var votedPolls = Object.keys(votes).reduce(function(prev, key) {
+        return prev[key] = votes[key].filter(function(id) {
+          return id !== pollID;
+        });
+      }, {});
+ 
+      // reset scores and save
+      poll.options.forEach(function(p) {
+        p.score = 0;
+      });
+      robot.brain.set('polls', polls);
+
+      // add this poll to the list of polls this user has voted on
+      votedPolls.push(pollID);
+      votes[getUsername(msg)] = votedPolls;
+      robot.brain.set('poll_user_votes', votes);
+
       msg.send('Voting reset for:');
       printPoll(poll, msg, false);
     }
