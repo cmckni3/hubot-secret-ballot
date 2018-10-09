@@ -8,9 +8,11 @@
 //   poll done - (pm only) finish and activate a poll currently in progress
 //   poll random - (pm only) show details for a random poll
 //   poll vote <poll number> <option letter> - (pm only) vote on a poll, ex. `poll vote 1 a`
-//   hubot poll list - (public or pm) lists all existing polls
-//   hubot poll show <poll number> - (public or pm) show details for a single poll, ex. `hubot poll show 1`
-//   hubot poll results <poll number> - (public or pm) list results for a single poll (public or private), ex. `hubot poll results 1`
+//   poll list - (public or pm) lists all existing polls
+//   poll show <poll number> - (public or pm) show details for a single poll, ex. `hubot poll show 1`
+//   poll results <poll number> - (public or pm) list results for a single poll (public or private), ex. `hubot poll results 1`
+//   poll flushall (pm only) - Removes all polls
+//   poll reset votes <poll number> - (public or pm) reset voting for a poll
 
 module.exports = function(robot) {
   var noPollInProgressMsg = 'You currently have no polls in progress. To create a new one, say `poll create "[question]"` (question in quotation marks).';
@@ -191,10 +193,8 @@ module.exports = function(robot) {
     if (isPrivateMsg(msg)) {
       // find poll by id number
       var pollID = Number(msg.match[1]);
+      var poll = find(pollID);
       var polls = robot.brain.get('polls');
-      var poll = polls.filter(function(poll) {
-        return poll.id === pollID;
-      })[0];
 
       if (typeof poll === 'undefined') {
         msg.send('Sorry, I couldn\'t find that poll.');
@@ -260,6 +260,23 @@ module.exports = function(robot) {
       robot.brain.set('polls_in_progress', []);
       robot.brain.set('polls_max_id', 0);
       msg.send('Poll data flushed.');
+    }
+  });
+  
+  robot.respond(/poll reset votes (\d+)/i, function(msg) {
+    var pollID = Number(msg.match[1]);
+    var pollsInProgress = robot.brain.get('polls_in_progress') || {};
+    var poll = Object.keys(pollsInProgress)map(function(key) {
+      return pollsInProgress[key];
+    }).filter(function(poll) {
+      return poll.id === id;
+    })[0];
+
+    if (typeof poll === 'undefined') {
+      msg.send('Sorry, I couldn\'t find that poll.');
+    } else {
+      msg.send('Voting reset for:');
+      printPoll(poll, msg, false);
     }
   });
 };
