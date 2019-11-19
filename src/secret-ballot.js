@@ -40,7 +40,7 @@ module.exports = function(robot) {
   /**
    * print out poll question, options, and instructions for voting
    *
-   * @param {object} poll 
+   * @param {object} poll
    * @param {object} msg - hubot msg object
    * @param {boolean} showScores - whether to show the score for each option
    */
@@ -68,7 +68,7 @@ module.exports = function(robot) {
 
       var polls = robot.brain.get('polls_in_progress') || {};
       var poll = polls[author];
-      
+
       if (typeof poll === 'object') {
         msg.send('You already have a poll in progress. Say `poll add option "[option]"` (option in quotation marks) to add an option to your current in-progress poll. Say `poll done` to finish and activate the poll.');
       } else if (typeof poll === 'undefined') {
@@ -103,7 +103,7 @@ module.exports = function(robot) {
       }
     }
   });
-  
+
   robot.hear(/poll preview/i, function(msg) {
     if (isPrivateMsg(msg)) {
       var author = getUsername(msg);
@@ -217,7 +217,7 @@ module.exports = function(robot) {
         msg.send('Sorry, I couldn\'t find that option for poll ' + pollID + '.');
         return;
       }
-      
+
       // increment option score and save
       poll.options[optionIdx].score += 1;
       robot.brain.set('polls', polls);
@@ -260,6 +260,32 @@ module.exports = function(robot) {
       robot.brain.set('polls_in_progress', []);
       robot.brain.set('polls_max_id', 0);
       msg.send('Poll data flushed.');
+    }
+  });
+
+  robot.hear(/poll reset (\d+)/, function(msg) {
+    if (isPrivateMsg) {
+      var pollID = msg.match[1];
+      var author = getUsername(msg);
+
+      var pollsInProgress = robot.brain.get('polls_in_progress') || {};
+      var poll = polls[author];
+      var polls = robot.brain.get('polls') || {};
+      var votes = robot.brain.get('poll_user_votes') || {};
+
+      console.log(votes);
+
+      if (typeof poll === 'object') {
+        Object.keys(votes).forEach(function(key) {
+          votes[key] = votes.filter(function(v) {
+            return v.id !== pollID;
+          });
+        });
+        robot.brain.set('poll_user_votes', votes);
+        console.log(votes);
+      } else {
+        msg.send('Poll not found');
+      }
     }
   });
 };
